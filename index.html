@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPEN API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            max-width: 500px;  text-align: center;
+        }
+        h1, #container {
+            max-width: 500px;  margin:20px auto;
+        }
+        #container div {
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #container div h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        #container div p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>법정 감염별 사망자 현황</h1>
+    <section id="container">실시간 정보를 불러오는 중...</section>
+
+    <script>
+        // 서버에서 XML 데이터를 불러오는 함수
+                
+        function fetchXMLData() {
+            const xml = new XMLHttpRequest();
+            xml.open("GET", "https://apis.data.go.kr/1790387/EIDAPIService/death?serviceKey=u9ids4VxsKVpFzEzkWWsO1MZBY2L%2Fdoo0TLquOwRRTw6Ahbm5Mim42P%2BXvt3Fhd6wm8OHhTvuGWHsRgfNyvT5A%3D%3D&resType=1&searchStartYear=2022&searchEndYear=2023&pageNo=1&numOfRows=100", true);  // 서버의 XML 파일 경로로 수정
+            xml.onreadystatechange = function () {
+                if (xml.readyState === 4) {
+                    if (xml.status === 200) {
+                        parseXML(xml.responseText);
+                    } else {
+                        console.error("XML 요청 실패: " + xml.status);
+                        document.getElementById("container").innerHTML = '데이터를 불러올 수 없습니다. 다시 시도해 주세요.';
+                    }
+                }
+            };
+            xml.send();
+        }
+        // XML 데이터를 파싱하고 HTML에 표시하는 함수
+        function parseXML( i ) {
+            // XML 문자열을 DOM 객체로 변환
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString( i, "application/xml" );  // 수정된 부분
+
+            // container에 데이터 삽입
+            const container = document.getElementById("container");
+            const items = xmlDoc.getElementsByTagName("item");
+
+            // 기존의 "실시간 정보를 불러오는 중..." 메시지를 제거
+            container.innerHTML = '';
+
+            // 각 row에 대해 정보를 처리하여 HTML 생성
+            for (let i = 0; i < items.length; i++) {
+                const row = items[i];
+                const year = row.getElementsByTagName("year")[0].textContent;
+                const icdGroupNm = row.getElementsByTagName("icdGroupNm")[0].textContent;
+                const icdNm = row.getElementsByTagName("icdNm")[0].textContent;
+                const resultVal = row.getElementsByTagName("resultVal")[0].textContent;
+
+                const div = document.createElement("div"); 
+                div.innerHTML= `
+                    <h3>${ year }</h3>
+                    <p>${ icdNm }, 사망자 : ${ resultVal }명</p>
+                `;
+
+                container.appendChild( div );
+            }
+        }
+        
+        // 페이지가 로드되면 XML 데이터를 불러오는 함수 호출
+        window.onload = fetchXMLData;
+    </script>
+</body>
+</html>
